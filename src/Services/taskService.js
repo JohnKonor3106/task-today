@@ -11,14 +11,14 @@ export const getTasks = async () => {
     throw error;
   }
 
-  return data; // Возвращаем массив объектов
+  return data;
 };
 
 export const addTask = async taskData => {
-  const { title, description, active } = taskData; // Разбираем объект
+  const { title, description, active, created_at } = taskData;
   const { data, error } = await supabase
     .from('tasks')
-    .insert({ title, description, active, created_at: new Date() }) // id генерируется автоматически, если это первичный ключ
+    .insert({ title, description, active, created_at }) // id генерируется автоматически, если это первичный ключ
     .select();
 
   if (error) {
@@ -26,7 +26,7 @@ export const addTask = async taskData => {
     throw error;
   }
 
-  return data; // Возвращаем вставленные данные
+  return data;
 };
 
 export const deleteTask = async id => {
@@ -37,5 +37,46 @@ export const deleteTask = async id => {
   } else {
     console.log('Deleted user:', data);
   }
+  return data;
+};
+
+export const updateTask = async ({ id, updateChecked }) => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ checked: updateChecked })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error updating data:', error);
+  } else {
+    console.log('Updated tasks:', data);
+  }
+
+  return data;
+};
+
+export const registrUser = async (email, password) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/`,
+    },
+  });
+
+  if (error) throw error;
+
+  return data;
+};
+
+export const signInWithEmail = async (email, password) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+
   return data;
 };

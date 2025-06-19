@@ -6,12 +6,12 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useTheme } from '@mui/material/styles';
-import { ContextTodoLogin } from '../Providers/ProviderTaskLogin';
+import { ContextTaskLogin } from '../context/contextApp';
 import { useContext } from 'react';
 
 const Bar = () => {
   const theme = useTheme();
-  const { handleClickLogin } = useContext(ContextTodoLogin);
+  const { handleClickLogin } = useContext(ContextTaskLogin);
 
   return (
     <Box sx={{ flexGrow: 1 }}>

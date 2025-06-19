@@ -1,20 +1,45 @@
+import React from 'react';
+
 export const ContextTaskLogin = React.createContext({
-  login: '',
-  password: '',
-  errors: {},
-  setLogin: () => {},
-  setPassword: () => {},
+  data: null,
+  isLoading: false,
+  globalError: null,
+  handleSubmitLogin: () => {},
   handleClickLogin: () => {},
   dispatch: () => {},
 });
 
 export const ContextTaskSignUp = React.createContext({
-  login: '',
-  password: '',
-  retryPassword: '',
+  registr: {
+    status: 'unregistered',
+    message: null,
+  },
+  isSigningUp: false,
+  globalError: null,
   errors: {},
-  setLoginSignUp: () => {},
-  setPasswordSignUp: () => {},
   handleSignUp: () => {},
+  dispatch: () => {},
+});
+export const ContextTaskList = React.createContext({
+  tasksList: {
+    tasks: {
+      list: [],
+      loading: false,
+    },
+    form: {
+      field: {
+        title: '',
+        description: '',
+      },
+      status: 'hidden',
+    },
+    error: {},
+  },
+  handleInputChange: () => {},
+  handleCreateTask: () => {},
+  handleDeleteTask: () => {},
+  initializationTask: () => {},
+  formOpen: () => {},
+  formClose: () => {},
   dispatch: () => {},
 });

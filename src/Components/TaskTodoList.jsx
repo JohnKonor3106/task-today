@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useContext } from 'react';
 import {
   List,
   ListItem,
@@ -6,88 +6,46 @@ import {
   Paper,
   TextField,
   Typography,
+  Checkbox,
   Button,
 } from '@mui/material';
-import { getTasks, addTask, deleteTask } from '../Services/taskService';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { getTasks } from '../Services/taskService';
+import { ContextTaskList } from '../context/contextApp';
 
 const TaskTodoList = () => {
-  const [tasks, setTasks] = useState({
-    list: [],
-    loading: false,
-  });
+  const {
+    tasksList,
+    initializationTask,
+    handleInputChange,
+    handleCreateTask,
+    handleDeleteTask,
+    handleChangeCheckBox,
+    formOpen,
+    formClose,
+    dispatch,
+  } = useContext(ContextTaskList);
 
-  const [taskInput, setTaskInput] = useState({
-    title: '',
-    description: '',
-  });
-
-  const [isFormOpen, setIsFormOpen] = useState(false); // Управление видимостью формы
-
-  const handleInputChange = e => {
-    const { name, value } = e.target;
-    setTaskInput(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCreateTask = async () => {
-    setTasks(prev => ({ ...prev, loading: true }));
-    try {
-      const data = await addTask({
-        title: taskInput.title,
-        description: taskInput.description,
-        active: true,
-      });
-      setTasks(prev => ({
-        ...prev,
-        list: [...prev.list, ...data],
-        loading: false,
-      }));
-      setTaskInput({ title: '', description: '' }); // Сброс формы
-      setIsFormOpen(false); // Закрытие формы
-    } catch (error) {
-      console.error('Ошибка при добавлении задачи:', error);
-      setTasks(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  const handleDeleteTask = async id => {
-    setTasks(prev => ({ ...prev, loading: true }));
-    try {
-      await deleteTask(id);
-      setTasks(prev => ({
-        ...prev,
-        list: prev.list.filter(task => task.id !== id),
-        loading: false,
-      }));
-    } catch (error) {
-      console.error('Ошибка при удалении задачи:', error);
-      setTasks(prev => ({ ...prev, loading: false }));
-    }
-  };
+  const { tasks, loading, form } = tasksList;
 
   useEffect(() => {
     const fetchTasks = async () => {
-      setTasks(prev => ({ ...prev, loading: true }));
       try {
         const response = await getTasks();
-        console.log('Fetched tasks:', response); // Для отладки
-        setTasks(prev => ({
-          ...prev,
-          list: response || [],
-          loading: false,
-        }));
+        initializationTask(response);
       } catch (error) {
+        dispatch({ type: 'TASK_LIST_INITILIAZATHION_FAILURE' });
         console.error('Ошибка при получении задач:', error);
-        setTasks(prev => ({ ...prev, loading: false }));
       }
     };
-
     fetchTasks();
   }, []);
 
   return (
     <>
       <List>
-        {tasks.loading ? (
+        {loading ? (
           <Typography
             variant='body1'
             sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}
@@ -103,7 +61,7 @@ const TaskTodoList = () => {
               Задач нет.
             </Typography>
             <Button
-              onClick={() => setIsFormOpen(true)} // Открытие формы
+              onClick={formOpen} // Открытие формы
               variant='outlined'
               sx={{ display: 'block', margin: '0 auto' }}
             >
@@ -112,25 +70,44 @@ const TaskTodoList = () => {
           </>
         ) : (
           <>
-            {tasks.list.map(({ title, description, active, id }) => (
-              <ListItem key={id} sx={{ borderBottom: '1px solid #eee' }}>
-                <ListItemText primary={title} secondary={description || ''} />
-                <ListItemText
-                  primary={active}
-                  secondary={active ? 'статус: активно' : 'статус: не активно'}
-                />
-                <Button
-                  variant='outlined'
-                  color='error'
-                  onClick={() => handleDeleteTask(id)} // Передача id напрямую
-                  sx={{ ml: 2 }}
-                >
-                  Удалить
-                </Button>
-              </ListItem>
-            ))}
+            {tasks.list.map(
+              ({ title, description, active, id, created_at, checked }) => (
+                <ListItem key={id} sx={{ borderBottom: '1px solid #eee' }}>
+                  <ListItemText
+                    primary={checked ? <s>{title}</s> : title}
+                    secondary={checked ? <s>{description}</s> : description}
+                    sx={{ width: '300px' }}
+                  />
+
+                  <ListItemText
+                    primary={active}
+                    secondary={
+                      active ? 'статус: активно' : 'статус: не активно'
+                    }
+                    sx={{ width: '300px' }}
+                  />
+
+                  <ListItemText primary={created_at} sx={{ width: '300px' }} />
+
+                  <Checkbox
+                    color='success'
+                    checked={checked}
+                    onChange={() => handleChangeCheckBox(id)}
+                  />
+
+                  <IconButton
+                    aria-label='delete'
+                    size='large'
+                    onClick={() => handleDeleteTask(id)}
+                    color='error'
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItem>
+              )
+            )}
             <Button
-              onClick={() => setIsFormOpen(true)} // Открытие формы
+              onClick={formOpen} // Открытие формы
               variant='outlined'
               sx={{ display: 'block', margin: '0 auto', mt: 2 }}
             >
@@ -140,7 +117,7 @@ const TaskTodoList = () => {
         )}
 
         {/* Форма, выровненная по центру */}
-        {isFormOpen && (
+        {form.status === 'show' && (
           <Paper
             elevation={6}
             sx={{
@@ -174,7 +151,7 @@ const TaskTodoList = () => {
               variant='outlined'
               fullWidth
               name='title'
-              value={taskInput.title}
+              value={form.field.title}
               onChange={handleInputChange}
               sx={{
                 '& .MuiOutlinedInput-notchedOutline': {
@@ -187,7 +164,7 @@ const TaskTodoList = () => {
               variant='outlined'
               fullWidth
               name='description'
-              value={taskInput.description}
+              value={form.field.description}
               onChange={handleInputChange}
               sx={{
                 '& .MuiOutlinedInput-notchedOutline': {
@@ -208,7 +185,7 @@ const TaskTodoList = () => {
             <Button
               variant='outlined'
               color='secondary'
-              onClick={() => setIsFormOpen(false)} // Закрытие формы
+              onClick={formClose} // Закрытие формы
               sx={{ mt: 1 }}
             >
               Отмена

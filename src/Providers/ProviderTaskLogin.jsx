@@ -2,53 +2,52 @@ import React from 'react';
 import reducerTodoLogin from '../Reducers/reducerTodoLogin';
 import { useImmerReducer } from 'use-immer';
 import { useNavigate } from 'react-router';
-
-export const ContextTodoLogin = React.createContext({
-  login: null,
-  password: null,
-  errors: {},
-  setLogin: () => {},
-  setPassword: () => {},
-  handleClickLogin: () => {},
-  dispatch: () => {},
-});
+import { ContextTaskLogin } from '../context/contextApp';
+import { signInWithEmail } from '../Services/taskService';
 
 const ProviderTaskLogin = ({ children }) => {
   const navigate = useNavigate();
 
   const initStateLogin = {
-    login: '',
-    password: '',
-    errors: {},
+    data: null,
+    isLoading: false,
+    globalError: null,
   };
 
-  const [state, dispatch] = useImmerReducer(reducerTodoLogin, initStateLogin);
+  const [stateSignIn, dispatch] = useImmerReducer(
+    reducerTodoLogin,
+    initStateLogin
+  );
 
-  const setLogin = value => {
-    dispatch({ type: 'SET_LOGIN', payload: value });
-  };
+  const handleSubmitLogin = async (email, password) => {
+    dispatch({ type: 'SET_SIGN_IN_PENDING' });
 
-  const setPassword = value => {
-    dispatch({ type: 'SET_PASSWORD', payload: value });
+    try {
+      const response = await signInWithEmail(email, password);
+      dispatch({ type: 'SET_SUCCESS_SIGN_IN', payload: response });
+      navigate('/userPage');
+    } catch (err) {
+      console.error('Ошибка входа:', err);
+      dispatch({ type: 'SET_SIGN_IN_FAILURE', payload: err });
+      throw err;
+    }
   };
 
   const handleClickLogin = () => {
     navigate('/Login');
-    console.log('click!');
   };
 
   const contextValue = {
-    ...state,
-    setLogin,
-    setPassword,
-    handleClickLogin: handleClickLogin,
+    stateSignIn,
+    handleClickLogin,
+    handleSubmitLogin,
     dispatch,
   };
 
   return (
-    <ContextTodoLogin.Provider value={contextValue}>
+    <ContextTaskLogin.Provider value={contextValue}>
       {children}
-    </ContextTodoLogin.Provider>
+    </ContextTaskLogin.Provider>
   );
 };
 
